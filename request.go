@@ -2,22 +2,24 @@ package request
 
 import (
 	"bytes"
+	"context"
+	"crypto/tls"
 	"errors"
 	"io"
 	"io/ioutil"
+	"net"
 	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
 	"time"
-	"net"
-	"context"
 )
 
 type redirectHandler func(req *http.Request, via []*http.Request) error
 
 type Request struct {
 	Header        http.Header     // 请求头
+	Host		  string		  // 自定义http协议域名
 	url           string          // 请求地址
 	method        string          // 请求方式
 	params        io.Reader       // 请求参数
@@ -100,9 +102,9 @@ func (r *Request) DialContext(fn func(ctx context.Context, network, addr string)
 	return r
 }
 
-// 指定Cdn服务器
+// 自定义请求服务器 IP:PORT - 废弃
 // address	127.0.0.1:80、127.0.0.1:443
-func (r *Request) Cdn(address string) *Request {
+func (r *Request) _cdn(address string) *Request {
 	d := new(net.Dialer)
 	r.transport.DialContext = func(ctx context.Context, network, addr string) (net.Conn, error) {
 		return d.DialContext(ctx, "tcp", address)
@@ -110,6 +112,22 @@ func (r *Request) Cdn(address string) *Request {
 	return r
 }
 
+// 设置域名
+// GET /index HTTP/1.1
+// Host: 域名
+// ....
+func (r *Request) SetHost(host string) *Request {
+	r.Host = host
+	return r
+}
+
+// SSL 不校验服务器证书
+func (r *Request) SetInsecureSkipVerify(s bool) *Request {
+	r.transport.TLSClientConfig = &tls.Config{
+		InsecureSkipVerify: s,
+	}
+	return r
+}
 // 设置CookieJar
 func (r *Request) SetCookieJar(jar http.CookieJar) *Request {
 	r.client.Jar = jar
@@ -205,6 +223,11 @@ func (r *Request) transmission() (*Response, error) {
 	req, err := http.NewRequest(r.method, r.url, r.params)
 	if err != nil {
 		return nil, err
+	}
+
+	// Host设置
+	if r.Host != "" {
+		req.Host = r.Host
 	}
 
 	// 请求头设置
