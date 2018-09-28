@@ -27,6 +27,8 @@ type Request struct {
 	redirectTimes int             // 重定向次数  默认5次
 	client        *http.Client    // 客户端
 	transport	  *http.Transport
+
+	execTime	  time.Duration	  // 执行时间
 }
 
 func New() *Request {
@@ -242,7 +244,9 @@ func (r *Request) transmission() (*Response, error) {
 	r.client.CheckRedirect = r.checkRedirect()
 
 	// Do
+	startTime := time.Now()
 	resp, err := r.client.Do(req)
+	r.execTime = time.Now().Sub(startTime)
 	if err != nil {
 		return nil, err
 	}
