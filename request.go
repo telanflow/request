@@ -171,6 +171,11 @@ func (r *Request) SetHeaders(header http.Header) *Request {
 	return r
 }
 
+// 获取上一次请求执行时间
+func (r *Request) GetExecTime() time.Duration {
+	return r.execTime
+}
+
 // 新增请求头
 func (r *Request) AddHeaders(header http.Header) *Request {
 	for key, val := range header {
