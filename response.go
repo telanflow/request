@@ -14,10 +14,10 @@ type Response struct {
 	Proto         string // e.g. "HTTP/1.0"
 	ProtoMajor    int    // e.g. 1
 	ProtoMinor    int    // e.g. 0
-	Header        http.Header
 	Body          []byte
 	ContentLength int64
 	Request       *http.Request
+	Response	  *http.Response
 }
 
 func NewResponse(resp *http.Response) (*Response, error) {
@@ -32,19 +32,19 @@ func NewResponse(resp *http.Response) (*Response, error) {
 		Proto:         resp.Proto,
 		ProtoMajor:    resp.ProtoMajor,
 		ProtoMinor:    resp.ProtoMinor,
-		Header:        resp.Header,
 		Body:          body,
 		ContentLength: resp.ContentLength,
 		Request:       resp.Request,
+		Response:      resp,
 	}, nil
 }
 
 func (r *Response) GetHeader(key string) string {
-	return r.Header.Get(key)
+	return r.Response.Header.Get(key)
 }
 
 func (r *Response) ContextType() string {
-	return r.Header.Get("Context-Type")
+	return r.Response.Header.Get("Context-Type")
 }
 
 func (r *Response) Json(v interface{}) error {
