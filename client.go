@@ -5,7 +5,7 @@ import (
 	"sync"
 )
 
-type Client interface {
+type ClientIF interface {
 	Do(req *http.Request) (*http.Response, error)
 }
 

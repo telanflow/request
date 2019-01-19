@@ -18,23 +18,19 @@ import (
 type redirectHandler func(req *http.Request, via []*http.Request) error
 
 type Request struct {
-	Host		  string		  // 自定义http协议域名
 	Header        http.Header     // 请求头
 
-	timeout		  time.Duration	  // 客户端总超时时间
+	host		  string		  // 自定义http协议域名
 	url           string          // 请求地址
 	method        string          // 请求方式
 	params        io.Reader       // 请求参数
+	timeout		  time.Duration	  // 客户端总超时时间
 	redirect      redirectHandler // 自定义重定向
 	redirectTimes int             // 重定向次数  默认5次
 	transport	  *http.Transport
 	cookieJar	  http.CookieJar
 
 	execTime	  time.Duration	  // 执行时间
-}
-
-func New() *Request {
-	return NewRequest()
 }
 
 func NewRequest() *Request {
@@ -55,39 +51,39 @@ func NewRequest() *Request {
 }
 
 // Get
-func (r *Request) Get(oUrl string, oParams interface{}) (*Response, error) {
-	return r.Suck(http.MethodGet, oUrl, oParams)
+func (r *Request) Get(oUrl string, oParams... interface{}) (*Response, error) {
+	return r.Suck(http.MethodGet, oUrl, oParams...)
 }
 
 // Post
-func (r *Request) Post(oUrl string, oParams interface{}) (*Response, error) {
-	return r.Suck(http.MethodPost, oUrl, oParams)
+func (r *Request) Post(oUrl string, oParams... interface{}) (*Response, error) {
+	return r.Suck(http.MethodPost, oUrl, oParams...)
 }
 
 // PostForm
-func (r *Request) PostForm(oUrl string, oParams interface{}) (*Response, error) {
+func (r *Request) PostForm(oUrl string, oParams... interface{}) (*Response, error) {
 	r.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	return r.Suck(http.MethodPost, oUrl, oParams)
+	return r.Suck(http.MethodPost, oUrl, oParams...)
 }
 
 // Put
-func (r *Request) Put(oUrl string, oParams interface{}) (*Response, error) {
-	return r.Suck(http.MethodPut, oUrl, oParams)
+func (r *Request) Put(oUrl string, oParams... interface{}) (*Response, error) {
+	return r.Suck(http.MethodPut, oUrl, oParams...)
 }
 
 // Head
-func (r *Request) Head(oUrl string, oParams interface{}) (*Response, error) {
-	return r.Suck(http.MethodHead, oUrl, oParams)
+func (r *Request) Head(oUrl string, oParams... interface{}) (*Response, error) {
+	return r.Suck(http.MethodHead, oUrl, oParams...)
 }
 
 // Options
-func (r *Request) Options(oUrl string, oParams interface{}) (*Response, error) {
-	return r.Suck(http.MethodOptions, oUrl, oParams)
+func (r *Request) Options(oUrl string, oParams... interface{}) (*Response, error) {
+	return r.Suck(http.MethodOptions, oUrl, oParams...)
 }
 
 // Delete
-func (r *Request) Delete(oUrl string, oParams interface{}) (*Response, error) {
-	return r.Suck(http.MethodDelete, oUrl, oParams)
+func (r *Request) Delete(oUrl string, oParams... interface{}) (*Response, error) {
+	return r.Suck(http.MethodDelete, oUrl, oParams...)
 }
 
 // Download File
@@ -100,20 +96,20 @@ func (r *Request) Download(oUrl string, toFile string) error {
 }
 
 // 设置重定向次数
-func (r *Request) SetRedirectTimes(t int) *Request {
+func (r *Request) SetRedirectTimes(t int) RequestIF {
 	r.redirectTimes = t
 	return r
 }
 
 // 自定义重定向Handler
-func (r *Request) SetRedirectHandler(handler redirectHandler) *Request {
+func (r *Request) SetRedirectHandler(handler redirectHandler) RequestIF {
 	r.redirect = handler
 	return r
 }
 
 // 设置代理地址
 // proxy	http://127.0.0.1:8081
-func (r *Request) SetProxy(proxy string) *Request {
+func (r *Request) SetProxy(proxy string) RequestIF {
 	u, err := url.Parse(proxy)
 	if err != nil {
 		panic(err)
@@ -123,7 +119,7 @@ func (r *Request) SetProxy(proxy string) *Request {
 }
 
 // 指定创建TCP连接的拨号函数
-func (r *Request) DialContext(fn func(ctx context.Context, network, addr string) (net.Conn, error)) *Request {
+func (r *Request) DialContext(fn func(ctx context.Context, network, addr string) (net.Conn, error)) RequestIF {
 	r.transport.DialContext = fn
 	return r
 }
@@ -132,13 +128,18 @@ func (r *Request) DialContext(fn func(ctx context.Context, network, addr string)
 // GET /index HTTP/1.1
 // Host: 域名
 // ....
-func (r *Request) SetHost(host string) *Request {
-	r.Host = host
+func (r *Request) SetHost(host string) RequestIF {
+	r.host = host
 	return r
 }
 
+// 获取自定义域名
+func (r *Request) GetHost(host string) string {
+	return r.host
+}
+
 // SSL 不校验服务器证书
-func (r *Request) SetInsecureSkipVerify(s bool) *Request {
+func (r *Request) SetInsecureSkipVerify(s bool) RequestIF {
 	if r.transport.TLSClientConfig != nil {
 		r.transport.TLSClientConfig.InsecureSkipVerify = s
 	} else {
@@ -150,43 +151,43 @@ func (r *Request) SetInsecureSkipVerify(s bool) *Request {
 }
 
 // 设置CookieJar
-func (r *Request) SetCookieJar(jar http.CookieJar) *Request {
+func (r *Request) SetCookieJar(jar http.CookieJar) RequestIF {
 	r.cookieJar = jar
 	return r
 }
 
 // 设置Referer
-func (r *Request) SetReferer(referer string) *Request {
+func (r *Request) SetReferer(referer string) RequestIF {
 	r.Header.Set("Referer", referer)
 	return r
 }
 
 // 设置字符集
-func (r *Request) SetCharset(charset string) *Request {
+func (r *Request) SetCharset(charset string) RequestIF {
 	r.Header.Set("Accept-Charset", charset)
 	return r
 }
 
 // 设置UserAgent
-func (r *Request) SetUserAgent(ua string) *Request {
+func (r *Request) SetUserAgent(ua string) RequestIF {
 	r.Header.Set("User-Agent", ua)
 	return r
 }
 
 // 设置请求头
-func (r *Request) SetHeader(key, val string) *Request {
+func (r *Request) SetHeader(key, val string) RequestIF {
 	r.Header.Set(key, val)
 	return r
 }
 
 // 设置请求头
-func (r *Request) SetHeaders(header http.Header) *Request {
+func (r *Request) SetHeaders(header http.Header) RequestIF {
 	r.Header = header
 	return r
 }
 
 // 新增请求头
-func (r *Request) AddHeaders(header http.Header) *Request {
+func (r *Request) AddHeaders(header http.Header) RequestIF {
 	for key, val := range header {
 		for _, v := range val {
 			r.Header.Set(key, v)
@@ -201,18 +202,18 @@ func (r *Request) GetHeader(key string) string {
 }
 
 // 获取上一次请求执行时间
-func (r *Request) GetExecTime() time.Duration {
+func (r *Request) ExecTime() time.Duration {
 	return r.execTime
 }
 
 // 设置超时时间
-func (r *Request) SetTimeout(t time.Duration) *Request {
+func (r *Request) SetTimeout(t time.Duration) RequestIF {
 	r.timeout = t
 	return r
 }
 
 // 设置TCP连接超时时间
-func (r *Request) SetDialTimeout(t time.Duration) *Request {
+func (r *Request) SetDialTimeout(t time.Duration) RequestIF {
 	r.transport.DialContext = (&net.Dialer{
 		Timeout:   t,
 		KeepAlive: t,
@@ -221,13 +222,13 @@ func (r *Request) SetDialTimeout(t time.Duration) *Request {
 }
 
 // 设置TLS握手超时时间
-func (r *Request) SetTLSTimeout(t time.Duration) *Request {
+func (r *Request) SetTLSTimeout(t time.Duration) RequestIF {
 	r.transport.TLSHandshakeTimeout = t
 	return r
 }
 
 // 设置读取ResponseHeader超时时间
-func (r *Request) SetResponseHeaderTimeout(t time.Duration) *Request {
+func (r *Request) SetResponseHeaderTimeout(t time.Duration) RequestIF {
 	r.transport.ResponseHeaderTimeout = t
 	return r
 }
@@ -236,19 +237,31 @@ func (r *Request) SetResponseHeaderTimeout(t time.Duration) *Request {
 // oMethod	请求类型
 // oUrl		目标地址
 // oParams	请求参数
-func (r *Request) Suck(oMethod, oUrl string, oParams interface{}) (*Response, error) {
+func (r *Request) Suck(oMethod, oUrl string, oParams... interface{}) (*Response, error) {
 	r.url = oUrl
 	r.method = oMethod
-	r.params = buildParams(oParams)
+	if len(oParams) > 0 {
+		r.params = buildParams(oParams[0])
+	}
 	return r.transmission()
 }
 
 // 重置默认值
-func (r *Request) Reset() *Request {
-	r.transport = &http.Transport{}
+func (r *Request) Reset() RequestIF {
+	r.transport = &http.Transport{
+		Proxy: http.ProxyFromEnvironment,
+		DialContext: (&net.Dialer{
+			Timeout:   30 * time.Second,
+			KeepAlive: 30 * time.Second,
+			DualStack: true,
+		}).DialContext,
+		TLSHandshakeTimeout: 10 * time.Second,
+		ResponseHeaderTimeout: 10 * time.Second,
+	}
 	r.Header = make(http.Header)
 	r.redirect = nil
 	r.redirectTimes = 5
+	r.host = ""
 	return r
 }
 
@@ -273,8 +286,8 @@ func (r *Request) transmission() (*Response, error) {
 	}
 
 	// Host设置
-	if r.Host != "" {
-		req.Host = r.Host
+	if r.host != "" {
+		req.Host = r.host
 	}
 
 	// 请求头设置
